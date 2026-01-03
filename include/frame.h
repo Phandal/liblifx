@@ -8,10 +8,13 @@ extern "C" {
 #include <stddef.h>
 #include <stdint.h>
 
+#define FRAME_SIZE_MAX                                                         \
+  52 /* NOTE: this will need to be updated to the actual amount */
 #define FRAME_HEADER_SIZE 36
 #define FRAME_PROTOCOL 1024
 #define FRAME_ADDRESSABLE 1
 #define FRAME_ORIGIN 0
+#define FRAME_RESERVED 0
 
 typedef enum {
   GetService = 2,
@@ -67,6 +70,17 @@ typedef struct {
  */
 int lifx_encode_frame(const lifx_frame_t *frame, uint8_t *const *buf,
                       const size_t n);
+
+/**
+ * @brief Decode a lifx buffer.
+ *
+ *
+ * Decodes a buffer into a lifx frame
+ *  @param frame
+ *  @param buffer
+ *  @param n maximum size of buffer
+ */
+int lifx_decode_frame(lifx_frame_t *frame, uint8_t *const *buf, const size_t n);
 
 #ifdef __cplusplus
 }

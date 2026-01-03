@@ -9,6 +9,24 @@
 #define IP "192.168.1.18"
 #define PORT 56700
 
+void frame_print(const FILE *fd, const lifx_frame_t frame) {
+  printf("FRAME HEADER:\n");
+  printf("size: %d\n", frame.header.size);
+  printf("tagged: %d\n", frame.header.tagged);
+  printf("source: %d\n", frame.header.source);
+  printf("FRAME ADDRESS:\n");
+  printf("target: ");
+  for (int i = 0; i < 8; ++i) {
+    printf("%02X", frame.header.target[i]);
+  }
+  printf("\n");
+  printf("response: %d\n", frame.header.response);
+  printf("acknowledgement: %d\n", frame.header.acknowledgement);
+  printf("sequence: %d\n", frame.header.sequence);
+  printf("Protocol Header:\n");
+  printf("type: %d\n", frame.header.type);
+}
+
 int main(void) {
   lifx_header_t header = {
       .size = 49,
@@ -72,5 +90,25 @@ int main(void) {
   }
   printf("Sent packet. Please check the light is green!\n");
 
+  uint8_t ip[FRAME_SIZE_MAX] = {0};
+  uint8_t *inboundPacket = ip;
+  if ((res = recv(sfd, inboundPacket, FRAME_SIZE_MAX, 0)) == -1) {
+    perror("recv");
+    close(sfd);
+    exit(EXIT_FAILURE);
+  }
+
+  printf("Received packet length: %d\n", res);
+  lifx_frame_t inboundFrame;
+  lifx_decode_frame(&inboundFrame, &inboundPacket, res);
+
+  /* for (int i = 0; i < res; ++i) { */
+  /*   printf("%02X", inboundPacket[i]); */
+  /* } */
+  /* printf("\n"); */
+
+  frame_print(stdout, inboundFrame);
+
   close(sfd);
+  return 0;
 }
