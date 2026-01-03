@@ -9,6 +9,9 @@ extern "C" {
 #include <stdint.h>
 
 #define FRAME_HEADER_SIZE 36
+#define FRAME_PROTOCOL 1024
+#define FRAME_ADDRESSABLE 1
+#define FRAME_ORIGIN 0
 
 typedef enum {
   GetService = 2,
@@ -35,10 +38,7 @@ typedef union {
 typedef struct {
   /* Frame Header */
   uint16_t size;
-  uint16_t protocol : 16;
-  uint8_t addressable : 1;
   uint8_t tagged : 1;
-  uint8_t origin : 2;
   uint32_t source;
 
   /* Frame Address */

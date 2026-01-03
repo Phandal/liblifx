@@ -12,10 +12,7 @@
 int main(void) {
   lifx_header_t header = {
       .size = 49,
-      .protocol = 1024, // NOTE: Hide this, as 1024 is the mandatory value
-      .addressable = 1, // NOTE: Hide this, as 1 is the mandatory value
       .tagged = 0,
-      .origin = 0, // NOTE: Hide this, as 0 is the mandatory value
       .source = 1234,
       .target = {0xD0, 0x73, 0xD5, 0x30, 0x9D, 0x57, 0, 0},
       .response = 0,

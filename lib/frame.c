@@ -83,11 +83,10 @@ int lifx_encode_frame(const lifx_frame_t *frame, uint8_t *const *buf,
 
   /* Frame Header */
   write_uint16(&packet, frame->header.size);
-  uint16_t protocol = 0;
-  protocol |= frame->header.protocol;
-  protocol |= frame->header.addressable << 12;
+  uint16_t protocol = FRAME_PROTOCOL;
+  protocol |= FRAME_ADDRESSABLE << 12;
   protocol |= frame->header.tagged << 13;
-  protocol |= frame->header.origin << 14;
+  protocol |= FRAME_ORIGIN << 14;
   write_uint16(&packet, protocol);
   write_uint32(&packet, frame->header.source);
 
