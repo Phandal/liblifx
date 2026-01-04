@@ -8,8 +8,10 @@ extern "C" {
 #include <stddef.h>
 #include <stdint.h>
 
-#define FRAME_SIZE_MAX                                                         \
-  52 /* NOTE: this will need to be updated to the actual amount */
+/* NOTE: this will need to be updated to the actual amount */
+#define PAYLOAD_MAX 64
+#define FRAME_SIZE_MAX FRAME_HEADER_SIZE + PAYLOAD_MAX
+
 #define FRAME_HEADER_SIZE 36
 #define FRAME_PROTOCOL 1024
 #define FRAME_ADDRESSABLE 1
@@ -18,12 +20,18 @@ extern "C" {
 
 typedef enum {
   GetService = 2,
+  SetPower = 21,
+  GetLabel = 23,
+  StateLabel = 25,
+  Acknowledgement = 45,
+  EchoRequest = 58,
+  EchoResponse = 59,
   SetColor = 102,
 } lifx_message_type;
 
 typedef struct {
   uint16_t level;
-} lifx_set_power_t;
+} lifx_set_power_payload_t;
 
 typedef struct {
   uint16_t hue;
@@ -31,11 +39,26 @@ typedef struct {
   uint16_t brightness;
   uint16_t kelvin;
   uint32_t duration;
-} lifx_set_color_t;
+} lifx_set_color_payload_t;
+
+typedef struct {
+  uint8_t label[33];
+} lifx_state_label_payload_t;
+
+typedef struct {
+  uint8_t echoing[65];
+} lifx_echo_request_payload_t;
+
+typedef struct {
+  uint8_t echoing[65];
+} lifx_echo_response_payload_t;
 
 typedef union {
-  lifx_set_power_t set_power_payload;
-  lifx_set_color_t set_color_payload;
+  lifx_set_power_payload_t set_power_payload;
+  lifx_set_color_payload_t set_color_payload;
+  lifx_state_label_payload_t state_label_payload;
+  lifx_echo_request_payload_t echo_request_payload;
+  lifx_echo_response_payload_t echo_response_payload;
 } lifx_payload_t;
 
 typedef struct {

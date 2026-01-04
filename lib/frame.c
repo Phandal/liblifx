@@ -3,6 +3,9 @@
 #include <stdio.h>
 #include <stdlib.h>
 
+/* TODO: Remove all failure points, as they should be handled by the user.
+ * Instead find a way to signify an error */
+
 typedef struct {
   uint8_t *const *buf;
   const int capacity;
@@ -68,7 +71,7 @@ uint32_t read_uint32(lifx_packet_t *packet) { return read_packet(packet, 4); }
 uint64_t read_uint64(lifx_packet_t *packet) { return read_packet(packet, 8); }
 
 int encode_set_color_payload(lifx_packet_t *packet,
-                             const lifx_set_color_t *payload) {
+                             const lifx_set_color_payload_t *payload) {
   write_uint8(packet, FRAME_RESERVED); // Reserved
   write_uint16(packet, payload->hue);
   write_uint16(packet, payload->saturation);
@@ -78,16 +81,36 @@ int encode_set_color_payload(lifx_packet_t *packet,
   return packet->cursor;
 }
 
+int encode_set_power_payload(lifx_packet_t *packet,
+                             const lifx_set_power_payload_t *payload) {
+  write_uint16(packet, payload->level);
+  return packet->cursor;
+}
+
+int encode_echo_request_payload(lifx_packet_t *packet,
+                                const lifx_echo_request_payload_t *payload) {
+  for (int i = 0; i < 64; ++i) {
+    write_uint8(packet, payload->echoing[i]);
+  }
+  return packet->cursor;
+}
+
 int encode_payload(lifx_packet_t *packet, lifx_message_type type,
                    const lifx_payload_t *payload) {
   switch (type) {
+  case SetPower:
+    return encode_set_power_payload(packet, &payload->set_power_payload);
   case SetColor:
     return encode_set_color_payload(packet, &payload->set_color_payload);
+  case EchoRequest:
+    return encode_echo_request_payload(packet, &payload->echo_request_payload);
+  case GetService:
+  case GetLabel:
+    return packet->cursor;
   default:
-    break;
+    fprintf(stderr, "[WARN] invalid payload type '%d'\n", type);
+    exit(EXIT_FAILURE);
   }
-
-  return packet->cursor;
 }
 
 int lifx_encode_frame(const lifx_frame_t *frame, uint8_t *const *buf,
@@ -139,6 +162,44 @@ int lifx_encode_frame(const lifx_frame_t *frame, uint8_t *const *buf,
   return packet.cursor;
 }
 
+int decode_state_label_payload(lifx_packet_t *packet,
+                               lifx_state_label_payload_t *payload) {
+  int i;
+  for (i = 0; i < 32; ++i) {
+    payload->label[i] = read_uint8(packet);
+  }
+  payload->label[i] = '\0';
+
+  return packet->cursor;
+}
+
+int decode_echo_response_payload(lifx_packet_t *packet,
+                                 lifx_echo_response_payload_t *payload) {
+  int i;
+  for (i = 0; i < 64; ++i) {
+    payload->echoing[i] = read_uint8(packet);
+  }
+  payload->echoing[i] = '\0';
+
+  return packet->cursor;
+}
+
+int decode_payload(lifx_packet_t *packet, lifx_message_type type,
+                   lifx_payload_t *payload) {
+  switch (type) {
+  case StateLabel:
+    return decode_state_label_payload(packet, &payload->state_label_payload);
+  case EchoResponse:
+    return decode_echo_response_payload(packet,
+                                        &payload->echo_response_payload);
+  case Acknowledgement:
+    return packet->cursor;
+  default:
+    fprintf(stderr, "[WARN] invalid payload type '%d'\n", type);
+    exit(EXIT_FAILURE);
+  }
+}
+
 int lifx_decode_frame(lifx_frame_t *frame, uint8_t *const *buf, size_t n) {
   if (frame == NULL) {
     return -1;
@@ -176,4 +237,9 @@ int lifx_decode_frame(lifx_frame_t *frame, uint8_t *const *buf, size_t n) {
   read_uint64(&packet); // Reserved Bytes
   frame->header.type = read_uint16(&packet);
   read_uint16(&packet); // Reserved Bytes
+
+  /* Payload */
+  decode_payload(&packet, frame->header.type, &frame->payload);
+
+  return packet.cursor;
 }
