@@ -184,6 +184,12 @@ int decode_echo_response_payload(lifx_packet_t *packet,
   return packet->cursor;
 }
 
+int decode_state_service_payload(lifx_packet_t *packet,
+                                 lifx_state_service_payload_t *payload) {
+  payload->service = read_uint8(packet);
+  payload->port = read_uint32(packet);
+}
+
 int decode_payload(lifx_packet_t *packet, lifx_message_type type,
                    lifx_payload_t *payload) {
   switch (type) {
@@ -192,6 +198,9 @@ int decode_payload(lifx_packet_t *packet, lifx_message_type type,
   case EchoResponse:
     return decode_echo_response_payload(packet,
                                         &payload->echo_response_payload);
+  case StateService:
+    return decode_state_service_payload(packet,
+                                        &payload->state_service_payload);
   case Acknowledgement:
     return packet->cursor;
   default:

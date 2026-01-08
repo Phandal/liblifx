@@ -10,27 +10,21 @@
 #define PORT 56700
 #define LOCAL_PORT 8080
 
-void payload_print(const lifx_payload_t *payload, lifx_message_type type)
-{
-  if (payload == NULL)
-  {
+void payload_print(const lifx_payload_t *payload, lifx_message_type type) {
+  if (payload == NULL) {
     return;
   }
 
-  switch (type)
-  {
-  case StateLabel:
-  {
+  switch (type) {
+  case StateLabel: {
     printf("label: %s\n", payload->state_label_payload.label);
     break;
   }
-  case EchoResponse:
-  {
+  case EchoResponse: {
     printf("echoing: %s\n", payload->echo_response_payload.echoing);
     break;
   }
-  case Acknowledgement:
-  {
+  case Acknowledgement: {
     printf("NO PAYLOAD\n");
     break;
   }
@@ -39,8 +33,7 @@ void payload_print(const lifx_payload_t *payload, lifx_message_type type)
   }
 }
 
-void frame_print(const lifx_frame_t *frame)
-{
+void frame_print(const lifx_frame_t *frame) {
   /* if (frame == NULL) { */
   /*   return; */
   /* } */
@@ -51,8 +44,7 @@ void frame_print(const lifx_frame_t *frame)
   printf("source: %d\n", frame->header.source);
   printf("FRAME ADDRESS:\n");
   printf("target: ");
-  for (int i = 0; i < 8; ++i)
-  {
+  for (int i = 0; i < 8; ++i) {
     printf("%02X", frame->header.target[i]);
   }
   printf("\n");
@@ -66,8 +58,7 @@ void frame_print(const lifx_frame_t *frame)
   payload_print(&frame->payload, frame->header.type);
 }
 
-int main(void)
-{
+int main(void) {
   /* lifx_header_t header = { */
   /*     .size = FRAME_HEADER_SIZE + 2, */
   /*     .tagged = 0, */
@@ -144,8 +135,7 @@ int main(void)
   uint8_t *packet = p;
 
   int size = lifx_encode_frame(&frame, &packet, header.size);
-  if (size == -1)
-  {
+  if (size == -1) {
     fprintf(stderr, "failed to encode frame\n");
     exit(EXIT_FAILURE);
   }
@@ -174,21 +164,19 @@ int main(void)
   local_addr.sin_port = htons(LOCAL_PORT);
 
   sfd = socket(AF_INET, SOCK_DGRAM, 0);
-  if (sfd == -1)
-  {
+  if (sfd == -1) {
     perror("socket");
     exit(EXIT_FAILURE);
   }
 
-  if (bind(sfd, (struct sockaddr *)&local_addr, sizeof(local_addr)) == -1)
-  {
+  if (bind(sfd, (struct sockaddr *)&local_addr, sizeof(local_addr)) == -1) {
     perror("bind");
     close(sfd);
     exit(EXIT_FAILURE);
   }
 
-  if (sendto(sfd, packet, frame.header.size, 0, (struct sockaddr *)&addr, sizeof(addr)) == -1)
-  {
+  if (sendto(sfd, packet, frame.header.size, 0, (struct sockaddr *)&addr,
+             sizeof(addr)) == -1) {
     perror("sendto");
     close(sfd);
     exit(EXIT_FAILURE);
@@ -197,8 +185,8 @@ int main(void)
 
   uint8_t ip[FRAME_SIZE_MAX] = {0};
   uint8_t *inboundPacket = ip;
-  if ((recvSize = recvfrom(sfd, inboundPacket, FRAME_SIZE_MAX, 0, NULL, NULL)) == -1)
-  {
+  if ((recvSize =
+           recvfrom(sfd, inboundPacket, FRAME_SIZE_MAX, 0, NULL, NULL)) == -1) {
     perror("recvfrom");
     close(sfd);
     exit(EXIT_FAILURE);
@@ -207,8 +195,7 @@ int main(void)
   printf("Received packet length: %d\n", recvSize);
   lifx_frame_t inboundFrame;
   res = lifx_decode_frame(&inboundFrame, &inboundPacket, recvSize);
-  if (res == -1)
-  {
+  if (res == -1) {
     fprintf(stderr, "failed to decode frame\n");
     close(sfd);
     exit(EXIT_FAILURE);

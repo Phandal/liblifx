@@ -20,6 +20,7 @@ extern "C" {
 
 typedef enum {
   GetService = 2,
+  StateService = 3,
   SetPower = 21,
   GetLabel = 23,
   StateLabel = 25,
@@ -53,12 +54,18 @@ typedef struct {
   uint8_t echoing[65];
 } lifx_echo_response_payload_t;
 
+typedef struct {
+  uint8_t service;
+  uint32_t port;
+} lifx_state_service_payload_t;
+
 typedef union {
+  lifx_state_service_payload_t state_service_payload;
   lifx_set_power_payload_t set_power_payload;
-  lifx_set_color_payload_t set_color_payload;
   lifx_state_label_payload_t state_label_payload;
   lifx_echo_request_payload_t echo_request_payload;
   lifx_echo_response_payload_t echo_response_payload;
+  lifx_set_color_payload_t set_color_payload;
 } lifx_payload_t;
 
 typedef struct {
