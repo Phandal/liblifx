@@ -188,6 +188,8 @@ int decode_state_service_payload(lifx_packet_t *packet,
                                  lifx_state_service_payload_t *payload) {
   payload->service = read_uint8(packet);
   payload->port = read_uint32(packet);
+
+  return packet->cursor;
 }
 
 int decode_payload(lifx_packet_t *packet, lifx_message_type type,
