@@ -6,9 +6,9 @@
 
 #include "frame.h"
 
+#define HOST "0.0.0.0"
 #define IP "192.168.1.18"
 #define PORT 56700
-#define LOCAL_PORT 8080
 
 void payload_print(const lifx_payload_t *payload, lifx_message_type type) {
   if (payload == NULL) {
@@ -34,9 +34,9 @@ void payload_print(const lifx_payload_t *payload, lifx_message_type type) {
 }
 
 void frame_print(const lifx_frame_t *frame) {
-  /* if (frame == NULL) { */
-  /*   return; */
-  /* } */
+  if (frame == NULL) {
+    return;
+  }
 
   printf("FRAME HEADER:\n");
   printf("size: %d\n", frame->header.size);
@@ -157,11 +157,10 @@ int main(void) {
 
   /* Setting up local address */
   struct in_addr local_in_addr;
-  inet_pton(AF_INET, "localhost", &local_in_addr);
+  inet_pton(AF_INET, HOST, &local_in_addr);
   struct sockaddr_in local_addr = {0};
   local_addr.sin_family = AF_INET;
   local_addr.sin_addr = local_in_addr;
-  local_addr.sin_port = htons(LOCAL_PORT);
 
   sfd = socket(AF_INET, SOCK_DGRAM, 0);
   if (sfd == -1) {
@@ -185,14 +184,29 @@ int main(void) {
 
   uint8_t ip[FRAME_SIZE_MAX] = {0};
   uint8_t *inboundPacket = ip;
-  if ((recvSize =
-           recvfrom(sfd, inboundPacket, FRAME_SIZE_MAX, 0, NULL, NULL)) == -1) {
+  struct sockaddr_storage recv_sockaddr;
+  socklen_t recv_sockaddr_len = sizeof(recv_sockaddr);
+  if ((recvSize = recvfrom(sfd, inboundPacket, FRAME_SIZE_MAX, 0,
+                           (struct sockaddr *)&recv_sockaddr,
+                           &recv_sockaddr_len)) == -1) {
     perror("recvfrom");
     close(sfd);
     exit(EXIT_FAILURE);
   }
 
-  printf("Received packet length: %d\n", recvSize);
+  char address[INET6_ADDRSTRLEN] = {0};
+  if (recv_sockaddr.ss_family == AF_INET) {
+    struct sockaddr_in *addr = (struct sockaddr_in *)&recv_sockaddr;
+    printf("Received packet (length %d) from %s:%d\n", recvSize,
+           inet_ntop(AF_INET, &addr->sin_addr, address, INET6_ADDRSTRLEN),
+           ntohs(addr->sin_port));
+  } else {
+    struct sockaddr_in6 *addr = (struct sockaddr_in6 *)&recv_sockaddr;
+    printf("Received packet (length %d) from %s:%d\n", recvSize,
+           inet_ntop(AF_INET6, &addr->sin6_addr, address, INET6_ADDRSTRLEN),
+           ntohs(addr->sin6_port));
+  }
+
   lifx_frame_t inboundFrame;
   res = lifx_decode_frame(&inboundFrame, &inboundPacket, recvSize);
   if (res == -1) {
