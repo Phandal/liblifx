@@ -47,7 +47,7 @@ int write_uint64(lifx_packet_t *packet, uint64_t v) {
 
 uint64_t read_packet(lifx_packet_t *packet, int n) {
   if ((packet->cursor + n) > packet->capacity) {
-    fprintf(stderr, "[WARN] overwrite packet\n");
+    fprintf(stderr, "[WARN] overread packet\n");
     exit(EXIT_FAILURE);
   }
 
@@ -69,6 +69,13 @@ uint16_t read_uint16(lifx_packet_t *packet) { return read_packet(packet, 2); }
 uint32_t read_uint32(lifx_packet_t *packet) { return read_packet(packet, 4); }
 
 uint64_t read_uint64(lifx_packet_t *packet) { return read_packet(packet, 8); }
+
+int encode_state_service_payload(lifx_packet_t *packet,
+                                 const lifx_state_service_payload_t *payload) {
+  write_uint8(packet, payload->service);
+  write_uint32(packet, payload->port);
+  return packet->cursor;
+}
 
 int encode_set_color_payload(lifx_packet_t *packet,
                              const lifx_set_color_payload_t *payload) {
@@ -98,6 +105,9 @@ int encode_echo_request_payload(lifx_packet_t *packet,
 int encode_payload(lifx_packet_t *packet, lifx_message_type type,
                    const lifx_payload_t *payload) {
   switch (type) {
+  case StateService:
+    return encode_state_service_payload(packet,
+                                        &payload->state_service_payload);
   case SetPower:
     return encode_set_power_payload(packet, &payload->set_power_payload);
   case SetColor:
@@ -203,6 +213,7 @@ int decode_payload(lifx_packet_t *packet, lifx_message_type type,
   case StateService:
     return decode_state_service_payload(packet,
                                         &payload->state_service_payload);
+  case GetService:
   case Acknowledgement:
     return packet->cursor;
   default:

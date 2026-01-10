@@ -19,6 +19,14 @@ extern "C" {
 #define FRAME_RESERVED 0
 
 typedef enum {
+  UDP = 1,
+  RESERVED1,
+  RESERVED2,
+  RESERVED3,
+  RESERVED4,
+} lifx_service;
+
+typedef enum {
   GetService = 2,
   StateService = 3,
   SetPower = 21,
@@ -55,7 +63,7 @@ typedef struct {
 } lifx_echo_response_payload_t;
 
 typedef struct {
-  uint8_t service;
+  lifx_service service;
   uint32_t port;
 } lifx_state_service_payload_t;
 

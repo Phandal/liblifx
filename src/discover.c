@@ -65,36 +65,6 @@ void frame_print(const lifx_frame_t *frame) {
   payload_print(&frame->payload, frame->header.type);
 }
 
-int get_lights(int sfd, lifx_frame_t **frame, int n) {
-  if (frame == NULL) {
-    return -1;
-  }
-
-  int res;
-
-  uint8_t p[FRAME_SIZE_MAX] = {0};
-  uint8_t *packet = p;
-  res = recvfrom(sfd, packet, FRAME_SIZE_MAX, 0, NULL, NULL);
-  if (res == -1) {
-    perror("recvfrom");
-    return -1;
-  }
-
-  puts("Recieved:");
-  for (int i = 0; i < res; ++i) {
-    printf("%02X", packet[i]);
-  }
-  puts("");
-
-  res = lifx_decode_frame(*frame, &packet, res);
-  if (res == -1) {
-    fprintf(stderr, "failed to decode packet\n");
-    return -1;
-  }
-
-  return 1;
-}
-
 int main(void) {
   struct in_addr ip;
   if (inet_pton(AF_INET, HOST, &ip) != 1) {
