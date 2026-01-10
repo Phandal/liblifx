@@ -7,7 +7,6 @@
 #include "frame.h"
 
 #define HOST "0.0.0.0"
-#define IP "192.168.1.18"
 #define PORT 56700
 
 void payload_print(const lifx_payload_t *payload, lifx_message_type type) {
@@ -58,7 +57,14 @@ void frame_print(const lifx_frame_t *frame) {
   payload_print(&frame->payload, frame->header.type);
 }
 
-int main(void) {
+int main(int argc, char **argv) {
+  if (argc != 2) {
+    fprintf(stderr, "usage: demo [IP]\n\n\tWhere IP is the ip of the light you "
+                    "want to control\n");
+    exit(EXIT_FAILURE);
+  }
+
+  char *ip = argv[1];
   /* lifx_header_t header = { */
   /*     .size = FRAME_HEADER_SIZE + 2, */
   /*     .tagged = 0, */
@@ -144,12 +150,12 @@ int main(void) {
   /*   printf("%2d: %02X\n", i, packet[i]); */
   /* } */
 
-  printf("Sending packet to light at %s:%d\n", IP, PORT);
+  printf("Sending packet to light at %s:%d\n", ip, PORT);
   int res, recvSize, sfd;
 
   /* Setting up outbound address */
   struct in_addr in_addr;
-  inet_pton(AF_INET, IP, &in_addr);
+  inet_pton(AF_INET, ip, &in_addr);
   struct sockaddr_in addr = {0};
   addr.sin_family = AF_INET;
   addr.sin_addr = in_addr;
@@ -182,8 +188,8 @@ int main(void) {
   }
   printf("Sent packet. Please check the light!\n");
 
-  uint8_t ip[FRAME_SIZE_MAX] = {0};
-  uint8_t *inboundPacket = ip;
+  uint8_t inbound_p[FRAME_SIZE_MAX] = {0};
+  uint8_t *inboundPacket = inbound_p;
   struct sockaddr_storage recv_sockaddr;
   socklen_t recv_sockaddr_len = sizeof(recv_sockaddr);
   if ((recvSize = recvfrom(sfd, inboundPacket, FRAME_SIZE_MAX, 0,
