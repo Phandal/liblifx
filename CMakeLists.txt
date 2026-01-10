@@ -16,3 +16,7 @@ target_include_directories(demo PRIVATE "include")
 add_executable(discover src/discover.c)
 target_link_libraries(discover lifx)
 target_include_directories(discover PRIVATE "include")
+
+add_executable(sdl src/sdl.c)
+target_link_libraries(sdl lifx)
+target_include_directories(sdl PRIVATE "include")
