@@ -1,10 +1,5 @@
 #include "frame.h"
 #include <stdint.h>
-#include <stdio.h>
-#include <stdlib.h>
-
-/* TODO: Remove all failure points, as they should be handled by the user.
- * Instead find a way to signify an error */
 
 typedef struct {
   uint8_t *const *buf;
@@ -13,9 +8,12 @@ typedef struct {
 } lifx_packet_t;
 
 int write_packet(lifx_packet_t *packet, uint64_t v, int n) {
+  if (packet->cursor < 0) {
+    return 0;
+  }
+
   if ((packet->cursor + n) > packet->capacity) {
-    fprintf(stderr, "[WARN] overwrite packet\n");
-    exit(EXIT_FAILURE);
+    packet->cursor = -1;
   }
 
   uint8_t write = 0;
@@ -46,9 +44,12 @@ int write_uint64(lifx_packet_t *packet, uint64_t v) {
 }
 
 uint64_t read_packet(lifx_packet_t *packet, int n) {
+  if (packet->cursor < 0) {
+    return 0;
+  }
+
   if ((packet->cursor + n) > packet->capacity) {
-    fprintf(stderr, "[WARN] overread packet\n");
-    exit(EXIT_FAILURE);
+    packet->cursor = -1;
   }
 
   uint64_t output = 0;
@@ -74,6 +75,7 @@ int encode_state_service_payload(lifx_packet_t *packet,
                                  const lifx_state_service_payload_t *payload) {
   write_uint8(packet, payload->service);
   write_uint32(packet, payload->port);
+
   return packet->cursor;
 }
 
@@ -85,12 +87,14 @@ int encode_set_color_payload(lifx_packet_t *packet,
   write_uint16(packet, payload->brightness);
   write_uint16(packet, payload->kelvin);
   write_uint32(packet, payload->duration);
+
   return packet->cursor;
 }
 
 int encode_set_power_payload(lifx_packet_t *packet,
                              const lifx_set_power_payload_t *payload) {
   write_uint16(packet, payload->level);
+
   return packet->cursor;
 }
 
@@ -99,6 +103,7 @@ int encode_echo_request_payload(lifx_packet_t *packet,
   for (int i = 0; i < 64; ++i) {
     write_uint8(packet, payload->echoing[i]);
   }
+
   return packet->cursor;
 }
 
@@ -116,10 +121,11 @@ int encode_payload(lifx_packet_t *packet, lifx_message_type type,
     return encode_echo_request_payload(packet, &payload->echo_request_payload);
   case GetService:
   case GetLabel:
+  case GetHostFirmware:
+  case GetVersion:
     return packet->cursor;
   default:
-    fprintf(stderr, "[WARN] invalid payload type '%d'\n", type);
-    exit(EXIT_FAILURE);
+    return -1;
   }
 }
 
@@ -202,6 +208,29 @@ int decode_state_service_payload(lifx_packet_t *packet,
   return packet->cursor;
 }
 
+int decode_state_host_firmware_payload(
+    lifx_packet_t *packet, lifx_state_host_firmware_payload_t *payload) {
+  payload->build = read_uint64(packet);
+  read_uint64(packet); // Reserved Byte
+  payload->version_minor = read_uint16(packet);
+  payload->version_major = read_uint16(packet);
+
+  return packet->cursor;
+}
+
+int decode_state_version_payload(lifx_packet_t *packet,
+                                 lifx_state_version_payload_t *payload) {
+  payload->vendor = read_uint32(packet);
+  payload->product = read_uint32(packet);
+
+  // Reserved Bytes
+  for (int x = 0; x < 4; ++x) {
+    read_uint8(packet);
+  }
+
+  return packet->cursor;
+}
+
 int decode_payload(lifx_packet_t *packet, lifx_message_type type,
                    lifx_payload_t *payload) {
   switch (type) {
@@ -213,12 +242,17 @@ int decode_payload(lifx_packet_t *packet, lifx_message_type type,
   case StateService:
     return decode_state_service_payload(packet,
                                         &payload->state_service_payload);
+  case StateHostFirmware:
+    return decode_state_host_firmware_payload(
+        packet, &payload->state_host_firmware_payload);
+  case StateVersion:
+    return decode_state_version_payload(packet,
+                                        &payload->state_version_payload);
   case GetService:
   case Acknowledgement:
     return packet->cursor;
   default:
-    fprintf(stderr, "[WARN] invalid payload type '%d'\n", type);
-    exit(EXIT_FAILURE);
+    return -1;
   }
 }
 
@@ -259,6 +293,10 @@ int lifx_decode_frame(lifx_frame_t *frame, uint8_t *const *buf, size_t n) {
   read_uint64(&packet); // Reserved Bytes
   frame->header.type = read_uint16(&packet);
   read_uint16(&packet); // Reserved Bytes
+
+  if (packet.cursor < 0) {
+    return -1;
+  }
 
   /* Payload */
   decode_payload(&packet, frame->header.type, &frame->payload);

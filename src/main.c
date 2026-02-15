@@ -23,6 +23,19 @@ void payload_print(const lifx_payload_t *payload, lifx_message_type type) {
     printf("echoing: %s\n", payload->echo_response_payload.echoing);
     break;
   }
+  case StateHostFirmware: {
+    printf("build: %ld\n", payload->state_host_firmware_payload.build);
+    printf("version_minor: %d\n",
+           payload->state_host_firmware_payload.version_minor);
+    printf("version major: %d\n",
+           payload->state_host_firmware_payload.version_major);
+    break;
+  }
+  case StateVersion: {
+    printf("vendor: %d\n", payload->state_version_payload.vendor);
+    printf("product: %d\n", payload->state_version_payload.product);
+    break;
+  }
   case Acknowledgement: {
     printf("NO PAYLOAD\n");
     break;
@@ -103,6 +116,35 @@ int main(int argc, char **argv) {
   /*         }, */
   /* }; */
 
+  lifx_header_t header = {
+      .size = FRAME_HEADER_SIZE,
+      .tagged = 0,
+      .source = 1234,
+      .target = {0xD0, 0x73, 0xD5, 0x30, 0x9D, 0x57, 0, 0},
+      .response = 1,
+      .acknowledgement = 0,
+      .sequence = 1,
+      .type = GetLabel,
+  };
+  lifx_payload_t payload = {0};
+
+  /* lifx_header_t header = { */
+  /*     .size = FRAME_HEADER_SIZE + 64, */
+  /*     .tagged = 0, */
+  /*     .source = 1234, */
+  /*     .target = {0xD0, 0x73, 0xD5, 0x30, 0x9D, 0x57, 0, 0}, */
+  /*     .response = 1, */
+  /*     .acknowledgement = 0, */
+  /*     .sequence = 1, */
+  /*     .type = EchoRequest, */
+  /* }; */
+  /* lifx_payload_t payload = { */
+  /*     .echo_request_payload = */
+  /*         { */
+  /*             .echoing = "Hello World", */
+  /*         }, */
+  /* }; */
+
   /* lifx_header_t header = { */
   /*     .size = FRAME_HEADER_SIZE, */
   /*     .tagged = 0, */
@@ -111,26 +153,21 @@ int main(int argc, char **argv) {
   /*     .response = 1, */
   /*     .acknowledgement = 0, */
   /*     .sequence = 1, */
-  /*     .type = GetLabel, */
+  /*     .type = GetHostFirmware, */
   /* }; */
   /* lifx_payload_t payload = {0}; */
 
-  lifx_header_t header = {
-      .size = FRAME_HEADER_SIZE + 64,
-      .tagged = 0,
-      .source = 1234,
-      .target = {0xD0, 0x73, 0xD5, 0x30, 0x9D, 0x57, 0, 0},
-      .response = 1,
-      .acknowledgement = 0,
-      .sequence = 1,
-      .type = EchoRequest,
-  };
-  lifx_payload_t payload = {
-      .echo_request_payload =
-          {
-              .echoing = "Hello World",
-          },
-  };
+  /* lifx_header_t header = { */
+  /*     .size = FRAME_HEADER_SIZE, */
+  /*     .tagged = 0, */
+  /*     .source = 1234, */
+  /*     .target = {0xD0, 0x73, 0xD5, 0x30, 0x9D, 0x57, 0, 0}, */
+  /*     .response = 1, */
+  /*     .acknowledgement = 0, */
+  /*     .sequence = 1, */
+  /*     .type = GetVersion, */
+  /* }; */
+  /* lifx_payload_t payload = {0}; */
 
   lifx_frame_t frame = {
       .header = header,

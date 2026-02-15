@@ -4,10 +4,12 @@ project(liblifx VERSION 0.1.0
   DESCRIPTION "Library to interact with Lifx Lan API"
   LANGUAGES C)
 
+set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
+set(CMAKE_C_STANDARD 23)
+add_compile_options(-Wall -Wextra -Wpedantic -Werror)
+
 add_library(lifx STATIC lib/frame.c)
 target_include_directories(lifx PUBLIC "include")
-
-set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
 add_executable(demo src/main.c)
 target_link_libraries(demo lifx)

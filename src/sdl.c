@@ -30,11 +30,13 @@ void payload_print(const lifx_payload_t *payload, lifx_message_type type) {
     break;
   }
   case Acknowledgement: {
+  case GetService:
     printf("NO PAYLOAD\n");
     break;
   }
   default:
     printf("Unimplemented payload print type: '%d'\n", type);
+    break;
   }
 }
 

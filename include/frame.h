@@ -29,9 +29,13 @@ typedef enum {
 typedef enum {
   GetService = 2,
   StateService = 3,
+  GetHostFirmware = 14,
+  StateHostFirmware = 15,
   SetPower = 21,
   GetLabel = 23,
   StateLabel = 25,
+  GetVersion = 32,
+  StateVersion = 33,
   Acknowledgement = 45,
   EchoRequest = 58,
   EchoResponse = 59,
@@ -67,8 +71,21 @@ typedef struct {
   uint32_t port;
 } lifx_state_service_payload_t;
 
+typedef struct {
+  uint64_t build;
+  uint16_t version_minor;
+  uint16_t version_major;
+} lifx_state_host_firmware_payload_t;
+
+typedef struct {
+  uint32_t vendor;
+  uint32_t product;
+} lifx_state_version_payload_t;
+
 typedef union {
+  lifx_state_version_payload_t state_version_payload;
   lifx_state_service_payload_t state_service_payload;
+  lifx_state_host_firmware_payload_t state_host_firmware_payload;
   lifx_set_power_payload_t set_power_payload;
   lifx_state_label_payload_t state_label_payload;
   lifx_echo_request_payload_t echo_request_payload;
@@ -83,7 +100,7 @@ typedef struct {
   uint32_t source;
 
   /* Frame Address */
-  uint8_t target[8];
+  uint8_t __attribute__((nonstring)) target[8];
   uint8_t response : 1;
   uint8_t acknowledgement : 1;
   uint8_t sequence;
