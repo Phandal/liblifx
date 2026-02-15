@@ -31,6 +31,8 @@ void payload_print(const lifx_payload_t *payload, lifx_message_type type) {
   }
   case Acknowledgement: {
   case GetService:
+  case GetHostFirmware:
+  case GetVersion:
     printf("NO PAYLOAD\n");
     break;
   }
@@ -129,8 +131,9 @@ int main(void) {
     }
     frame_print(&inbound_frame);
 
+    lifx_frame_t *frame = NULL;
     if (inbound_frame.header.type == GetService) {
-      lifx_frame_t frame = {
+      lifx_frame_t temp = {
           .header =
               {
                   .size = FRAME_HEADER_SIZE + 5,
@@ -151,11 +154,61 @@ int main(void) {
                       },
               },
       };
+      frame = &temp;
+    } else if (inbound_frame.header.type == GetHostFirmware) {
+      lifx_frame_t temp = {
+          .header =
+              {
+                  .size = FRAME_HEADER_SIZE + 20,
+                  .tagged = 0,
+                  .target = "DEADBEEF",
+                  .source = inbound_frame.header.source,
+                  .sequence = inbound_frame.header.sequence,
+                  .acknowledgement = 0,
+                  .response = 0,
+                  .type = StateHostFirmware,
+              },
+          .payload =
+              {
+                  .state_host_firmware_payload =
+                      {
+                          .build = 2013200308,
+                          .version_minor = 90,
+                          .version_major = 3,
+                      },
+              },
+      };
+      frame = &temp;
+    } else if (inbound_frame.header.type == GetVersion) {
+      lifx_frame_t temp = {
+          .header =
+              {
+                  .size = FRAME_HEADER_SIZE + 12,
+                  .tagged = 0,
+                  .target = "DEADBEEF",
+                  .source = inbound_frame.header.source,
+                  .sequence = inbound_frame.header.sequence,
+                  .acknowledgement = 0,
+                  .response = 0,
+                  .type = StateVersion,
+              },
+          .payload =
+              {
+                  .state_version_payload =
+                      {
+                          .vendor = 1,
+                          .product = 49,
+                      },
+              },
+      };
+      frame = &temp;
+    }
 
+    if (frame != NULL) {
       uint8_t p[FRAME_SIZE_MAX] = {0};
       uint8_t *packet = p;
       int size;
-      size = lifx_encode_frame(&frame, &packet, FRAME_SIZE_MAX);
+      size = lifx_encode_frame(frame, &packet, frame->header.size);
       if (size == -1) {
         fprintf(stderr, "failed to encode lifx packet\n");
         exit(EXIT_FAILURE);
@@ -166,7 +219,7 @@ int main(void) {
         fprintf(stderr, "failed to send response packet\n");
         exit(EXIT_FAILURE);
       }
-      printf("sent state service response!\n");
+      printf("sent response!\n");
     }
   }
 
