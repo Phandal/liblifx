@@ -79,6 +79,15 @@ int encode_state_service_payload(lifx_packet_t *packet,
   return packet->cursor;
 }
 
+int encode_state_label_payload(lifx_packet_t *packet,
+                               const lifx_state_label_payload_t *payload) {
+  for (int i = 0; i < 32; ++i) {
+    write_uint8(packet, payload->label[i]);
+  }
+
+  return packet->cursor;
+}
+
 int encode_set_color_payload(lifx_packet_t *packet,
                              const lifx_set_color_payload_t *payload) {
   write_uint8(packet, FRAME_RESERVED); // Reserved
@@ -113,6 +122,8 @@ int encode_payload(lifx_packet_t *packet, lifx_message_type type,
   case StateService:
     return encode_state_service_payload(packet,
                                         &payload->state_service_payload);
+  case StateLabel:
+    return encode_state_label_payload(packet, &payload->state_label_payload);
   case SetPower:
     return encode_set_power_payload(packet, &payload->set_power_payload);
   case SetColor:
@@ -173,9 +184,7 @@ int lifx_encode_frame(const lifx_frame_t *frame, uint8_t *const *buf,
   write_uint16(&packet, FRAME_RESERVED); // Reserved Bytes
 
   /* Payload */
-  encode_payload(&packet, frame->header.type, &(frame->payload));
-
-  return packet.cursor;
+  return encode_payload(&packet, frame->header.type, &(frame->payload));
 }
 
 int decode_state_label_payload(lifx_packet_t *packet,
@@ -250,6 +259,7 @@ int decode_payload(lifx_packet_t *packet, lifx_message_type type,
                                         &payload->state_version_payload);
   case GetService:
   case Acknowledgement:
+  case GetLabel:
     return packet->cursor;
   default:
     return -1;
@@ -299,7 +309,5 @@ int lifx_decode_frame(lifx_frame_t *frame, uint8_t *const *buf, size_t n) {
   }
 
   /* Payload */
-  decode_payload(&packet, frame->header.type, &frame->payload);
-
-  return packet.cursor;
+  return decode_payload(&packet, frame->header.type, &frame->payload);
 }

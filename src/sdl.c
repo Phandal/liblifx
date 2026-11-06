@@ -30,6 +30,7 @@ void payload_print(const lifx_payload_t *payload, lifx_message_type type) {
     break;
   }
   case Acknowledgement: {
+  case GetLabel:
   case GetService:
   case GetHostFirmware:
   case GetVersion:
@@ -198,6 +199,28 @@ int main(void) {
                       {
                           .vendor = 1,
                           .product = 49,
+                      },
+              },
+      };
+      frame = &temp;
+    } else if (inbound_frame.header.type == GetLabel) {
+      lifx_frame_t temp = {
+          .header =
+              {
+                  .size = FRAME_HEADER_SIZE + 32,
+                  .tagged = 0,
+                  .target = "DEADBEEF",
+                  .source = inbound_frame.header.source,
+                  .sequence = inbound_frame.header.sequence,
+                  .acknowledgement = 0,
+                  .response = 0,
+                  .type = StateLabel,
+              },
+          .payload =
+              {
+                  .state_label_payload =
+                      {
+                          .label = "SDL LIGHT",
                       },
               },
       };
